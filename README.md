@@ -165,15 +165,6 @@ This application uses the official Scalekit Python SDK for all authentication op
 - `ScalekitClient.refresh_access_token()` - Refresh expired tokens
 - `ScalekitClient.get_logout_url()` - Generate logout URL
 
-#### Key Differences from Django Version
-
-This FastAPI version maintains the same functionality as the Django example but uses:
-
-- **FastAPI** instead of Django for the web framework
-- **Jinja2 templates** (same syntax, but using `url_for()` instead of `{% url %}`)
-- **FastAPI dependencies** instead of Django decorators for authentication
-- **Starlette middleware** instead of Django middleware
-- **Session middleware** from Starlette for session management
 
 #### Support
 
