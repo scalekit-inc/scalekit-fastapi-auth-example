@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management - Scalekit Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home_view') }}">Scalekit Demo</a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">Welcome, {{ user.get('name', 'User')|default('User') }}!</span>
+                <a class="nav-link" href="{{ url_for('dashboard_view') }}">Dashboard</a>
+                <a class="nav-link active" href="{{ url_for('sessions_view') }}">Sessions</a>
+                <form class="d-inline" action="{{ url_for('logout_view') }}" method="post">
+                    <button class="btn btn-outline-light btn-sm ms-2" type="submit">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>Session Management</h1>
+                </div>
+
+                <!-- Current Session Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Current Session</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if session_info %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>User Information</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>User ID:</strong></td>
+                                        <td>{{ session_info.userId|default('N/A') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Email:</strong></td>
+                                        <td>{{ session_info.email|default('N/A') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Name:</strong></td>
+                                        <td>{{ session_info.name|default('N/A') }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Token Information</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Has Access Token:</strong></td>
+                                        <td>
+                                            {% if session_info.hasAccessToken %}
+                                            <span class="badge bg-success">Yes</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">No</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Has Refresh Token:</strong></td>
+                                        <td>
+                                            {% if session_info.hasRefreshToken %}
+                                            <span class="badge bg-success">Yes</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">No</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Token Expiry Information -->
+                        {% if expiry_info %}
+                        <div class="mt-4">
+                            <h6>Token Expiry Information</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Expires At:</strong></td>
+                                            <td>{{ expiry_info.expiresAt.strftime('%Y-%m-%d %H:%M:%S') if expiry_info.expiresAt else 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Time Until Expiry:</strong></td>
+                                            <td>
+                                                {% if expiry_info.minutesUntilExpiry %}
+                                                    {% if expiry_info.minutesUntilExpiry > 60 %}
+                                                        {{ (expiry_info.minutesUntilExpiry / 60)|int }} hours
+                                                    {% else %}
+                                                        {{ expiry_info.minutesUntilExpiry }} minutes
+                                                    {% endif %}
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert {% if is_token_expired %}alert-danger{% elif is_token_expiring_soon %}alert-warning{% else %}alert-success{% endif %}">
+                                        <strong>Status:</strong>
+                                        {% if is_token_expired %}
+                                        Token has expired
+                                        {% elif is_token_expiring_soon %}
+                                        Token expiring soon
+                                        {% else %}
+                                        Token is valid
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Token Values (Collapsible) -->
+                        <div class="mt-4">
+                            <h6>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#tokenValues" aria-expanded="false" aria-controls="tokenValues">
+                                    <span id="tokenToggleText">Show</span> Token Values
+                                </button>
+                            </h6>
+                            <div class="collapse" id="tokenValues">
+                                <div class="card card-body bg-light mt-2">
+                                    {% if access_token %}
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong>Access Token:</strong>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('accessToken')">Copy</button>
+                                        </div>
+                                        <div class="p-2 bg-white border rounded" style="word-break: break-all; font-family: monospace; font-size: 0.85em;" id="accessToken">{{ access_token }}</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if refresh_token %}
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong>Refresh Token:</strong>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('refreshToken')">Copy</button>
+                                        </div>
+                                        <div class="p-2 bg-white border rounded" style="word-break: break-all; font-family: monospace; font-size: 0.85em;" id="refreshToken">{{ refresh_token }}</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if id_token %}
+                                    <div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong>ID Token:</strong>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('idToken')">Copy</button>
+                                        </div>
+                                        <div class="p-2 bg-white border rounded" style="word-break: break-all; font-family: monospace; font-size: 0.85em;" id="idToken">{{ id_token }}</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">No session information available.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Session Actions -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Session Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2 d-md-flex">
+                            <button class="btn btn-outline-warning" onclick="refreshSession()">Refresh Session Info</button>
+                            <button class="btn btn-outline-info" onclick="validateToken()">Validate Token</button>
+                            <form class="d-inline" action="{{ url_for('logout_view') }}" method="post">
+                                <button class="btn btn-outline-danger" type="submit">Logout & End Session</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function validateToken() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Validating...';
+            button.disabled = true;
+            
+            fetch('{{ url_for("validate_token_view") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    let message = '✅ Token is valid!\n\n';
+                    if (data.userId) message += `User ID: ${data.userId}\n`;
+                    if (data.email) message += `Email: ${data.email}\n`;
+                    if (data.name) message += `Name: ${data.name}\n`;
+                    alert(message);
+                } else {
+                    alert(`❌ Token validation failed!\n\nError: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Token validation error:', error);
+                alert('❌ Token validation failed!\n\nError: Unable to validate token. Please try again.');
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+        }
+
+        function refreshSession() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Refreshing...';
+            button.disabled = true;
+            
+            fetch('{{ url_for("refresh_token_view") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Tokens refreshed successfully!\n\nReloading page...');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert(`❌ Token refresh failed!\n\nError: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Token refresh error:', error);
+                alert('❌ Token refresh failed!\n\nError: Unable to refresh tokens. Please try again.');
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Show temporary success message
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    button.textContent = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-primary');
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        // Update toggle button text
+        document.getElementById('tokenValues').addEventListener('show.bs.collapse', function() {
+            document.getElementById('tokenToggleText').textContent = 'Hide';
+        });
+        document.getElementById('tokenValues').addEventListener('hide.bs.collapse', function() {
+            document.getElementById('tokenToggleText').textContent = 'Show';
+        });
+
+        {% if is_token_expired %}
+        // Only show alert if token is actually expired (middleware refresh may have failed)
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (confirm('Your session has expired. Would you like to refresh the page to try re-authenticating?')) {
+                    window.location.reload();
+                }
+            }, 5000);
+        });
+        {% endif %}
+    </script>
+</body>
+</html>
+

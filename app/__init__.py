@@ -1,0 +1,4 @@
+"""
+FastAPI Scalekit Authentication Example
+"""
+

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Settings - Scalekit Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home_view') }}">Scalekit Demo</a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">Welcome, {{ name|default('User') }}!</span>
+                <a class="nav-link" href="{{ url_for('dashboard_view') }}">Dashboard</a>
+                <a class="nav-link" href="{{ url_for('sessions_view') }}">Sessions</a>
+                <a class="nav-link active" href="{{ url_for('organization_settings_view') }}">Organization Settings</a>
+                <form class="d-inline" action="{{ url_for('logout_view') }}" method="post">
+                    <button class="btn btn-outline-light btn-sm ms-2" type="submit">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>Organization Settings</h1>
+                    <span class="badge bg-success">Protected Route</span>
+                </div>
+
+                <div class="alert alert-success">
+                    <h5>✅ Access Granted</h5>
+                    <p class="mb-0">
+                        You have successfully accessed this protected route! This page requires the 
+                        <strong>'organization:settings'</strong> permission, which was validated from your access token 
+                        using Scalekit SDK's <code>validate_token</code> method.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Permission Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Required Permission</h6>
+                                <p>
+                                    <span class="badge bg-primary">organization:settings</span>
+                                </p>
+                                <p class="text-muted small">
+                                    This permission was extracted from your access token using Scalekit SDK's 
+                                    <code>validate_token_and_get_claims()</code> method.
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Your Permissions</h6>
+                                {% if permissions %}
+                                    <div>
+                                        {% for perm in permissions %}
+                                            <span class="badge bg-secondary me-1 mb-1">{{ perm }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">No permissions found in token</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Example Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>This is an example of a protected route that requires specific permissions.</p>
+                        <p class="text-muted">
+                            Only users with the <code>organization:settings</code> permission in their access token 
+                            can access this page. The permission check is performed using Scalekit SDK's token validation.
+                        </p>
+                        
+                        <div class="mt-4">
+                            <h6>How It Works:</h6>
+                            <ol>
+                                <li>User must be authenticated (have a valid Scalekit session)</li>
+                                <li>The access token is retrieved from the session</li>
+                                <li>Scalekit SDK's <code>validate_token_and_get_claims()</code> is called</li>
+                                <li>Permissions are extracted from the token claims</li>
+                                <li>If <code>organization:settings</code> is present, access is granted</li>
+                                <li>Otherwise, a 403 Forbidden response is returned</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <a href="{{ url_for('dashboard_view') }}" class="btn btn-secondary">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
