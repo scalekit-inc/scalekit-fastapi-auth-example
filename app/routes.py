@@ -447,21 +447,21 @@ async def refresh_token_view(request: Request, user: dict = Depends(require_logi
                     decoded = base64.urlsafe_b64decode(payload)
                     claims = json.loads(decoded)
                     exp = claims.get('exp')
-                                    if exp:
-                                        # exp is Unix timestamp, calculate expires_in
-                                        from datetime import timezone
-                                        now_ts = datetime.now(timezone.utc).timestamp()
-                                        expires_in = int(exp - now_ts)
-                            except Exception:
-                                pass
-                        
-                        # Fallback to response expires_in if JWT decoding failed
-                        if not expires_in:
-                            expires_in = (
-                                token_response.get('expires_in') or 
-                                token_response.get('expiresIn') or
-                                3600
-                            )
+                    if exp:
+                        # exp is Unix timestamp, calculate expires_in
+                        from datetime import timezone
+                        now_ts = datetime.now(timezone.utc).timestamp()
+                        expires_in = int(exp - now_ts)
+            except Exception:
+                pass
+        
+        # Fallback to response expires_in if JWT decoding failed
+        if not expires_in:
+            expires_in = (
+                token_response.get('expires_in') or 
+                token_response.get('expiresIn') or
+                3600
+            )
         
         expires_at = datetime.now() + timedelta(seconds=expires_in)
         
